@@ -14,7 +14,8 @@
     "lucide-vue-next": "^0.477.0",
     "rm": "^0.1.8",
     "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "vue-router": "^4.5.0",
+    "water_quality": "file:"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
