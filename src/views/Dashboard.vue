@@ -109,6 +109,60 @@
             <canvas ref="phChartRef"></canvas>
           </div>
         </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-800 dark:text-white">
+              Histórico de Turbidez
+            </h2>
+            <div class="flex space-x-2">
+              <button
+                class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+              >
+                Hoje
+              </button>
+              <button
+                class="text-xs px-2 py-1 rounded text-gray-500 dark:text-gray-400"
+              >
+                Semana
+              </button>
+              <button
+                class="text-xs px-2 py-1 rounded text-gray-500 dark:text-gray-400"
+              >
+                Mês
+              </button>
+            </div>
+          </div>
+          <div class="h-64">
+            <canvas ref="turbidityChartRef"></canvas>
+          </div>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-lg font-medium text-gray-800 dark:text-white">
+              Histórico de O₂ Dissolvido
+            </h2>
+            <div class="flex space-x-2">
+              <button
+                class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+              >
+                Hoje
+              </button>
+              <button
+                class="text-xs px-2 py-1 rounded text-gray-500 dark:text-gray-400"
+              >
+                Semana
+              </button>
+              <button
+                class="text-xs px-2 py-1 rounded text-gray-500 dark:text-gray-400"
+              >
+                Mês
+              </button>
+            </div>
+          </div>
+          <div class="h-64">
+            <canvas ref="oxygenChartRef"></canvas>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -130,6 +184,8 @@ const sensorData = {
 // Referências para os gráficos
 const temperatureChartRef = ref<HTMLCanvasElement | null>(null);
 const phChartRef = ref<HTMLCanvasElement | null>(null);
+const turbidityChartRef = ref<HTMLCanvasElement | null>(null);
+const oxygenChartRef = ref<HTMLCanvasElement | null>(null);
 
 // Função para determinar o status do sensor
 const getSensorStatus = (
@@ -225,6 +281,93 @@ onMounted(() => {
             data: generateRandomData(7.2, 0.5, 24),
             borderColor: "rgb(54, 162, 235)",
             backgroundColor: "rgba(54, 162, 235, 0.1)",
+            tension: 0.4,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            grid: {
+              display: true,
+              color: "rgba(0, 0, 0, 0.05)",
+            },
+          },
+          x: {
+            grid: {
+              display: false,
+            },
+          },
+        },
+      },
+    });
+  }
+  // Inicializar gráfico de turbidez
+  if (turbidityChartRef.value) {
+    const ctx = turbidityChartRef.value.getContext("2d");
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: generateTimeLabels(),
+        datasets: [
+          {
+            label: "Turbidez (NTU)",
+            data: generateRandomData(3.1, 1.0, 24),
+            borderColor: "rgb(205, 133, 63)",
+            backgroundColor: "rgba(205, 133, 63, 0.1)",
+            tension: 0.4,
+            fill: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false,
+          },
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            grid: {
+              display: true,
+              color: "rgba(0, 0, 0, 0.05)",
+            },
+          },
+          x: {
+            grid: {
+              display: false,
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // Inicializar gráfico de O₂ Dissolvido
+  if (oxygenChartRef.value) {
+    const ctx = oxygenChartRef.value.getContext("2d");
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: generateTimeLabels(),
+        datasets: [
+          {
+            label: "O₂ Dissolvido (mg/L)",
+            data: generateRandomData(5.8, 0.8, 24),
+            borderColor: "rgb(0, 191, 255)",
+            backgroundColor: "rgba(0, 191, 255, 0.1)",
             tension: 0.4,
             fill: true,
           },

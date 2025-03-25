@@ -109,8 +109,7 @@
       <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center">
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            &copy; {{ new Date().getFullYear() }} Aquaculture Solutions. All
-            rights reserved.
+            &copy; {{ new Date().getFullYear() }} PUCPR Todos os direitos reservados
           </p>
           <div class="flex space-x-6">
             <a
