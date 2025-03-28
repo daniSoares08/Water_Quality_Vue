@@ -225,6 +225,15 @@ const generateRandomData = (
 
 onMounted(() => {
   // Inicializar gráfico de temperatura
+  // Escreva um httppost para a função getTemperaturas que irá receber o seguinte json:
+  // [EXEMPLO Q EU VOU MANDAR]
+  // Esses dados precisam ser inseridos dinamicamente na tabela de temperatura
+  
+  // getTemperaturas(){
+  //   HTTPGet ("api/sensores/termometro")
+  // }
+
+
   if (temperatureChartRef.value) {
     const ctx = temperatureChartRef.value.getContext("2d");
     new Chart(ctx, {
