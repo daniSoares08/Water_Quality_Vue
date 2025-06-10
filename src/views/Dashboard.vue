@@ -109,6 +109,8 @@
             <canvas ref="phChartRef"></canvas>
           </div>
         </div>
+
+        <!-- Turbidity History Chart -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-medium text-gray-800 dark:text-white">
@@ -136,6 +138,8 @@
             <canvas ref="turbidityChartRef"></canvas>
           </div>
         </div>
+
+        <!-- Oxygen History Chart -->
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-5">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-medium text-gray-800 dark:text-white">
@@ -174,7 +178,14 @@ import SensorCard from "../components/SensorCard.vue";
 import Chart from "chart.js/auto";
 
 // Simulação de dados vindos do backend
-const sensorData = {
+type SensorData = {
+  ph: number;
+  temperature: number;
+  turbidity: number;
+  oxygen: number;
+};
+
+const sensorData: SensorData = {
   ph: 7.2,
   temperature: 25.5,
   turbidity: 3.1,
@@ -200,212 +211,114 @@ const getSensorStatus = (
   return "critical";
 };
 
-// Dados simulados para os gráficos
+// Utilitários para gerar dados fake
 const generateTimeLabels = () => {
-  const labels = [];
+  const labels: string[] = [];
   const now = new Date();
   for (let i = 23; i >= 0; i--) {
     const d = new Date(now);
     d.setHours(now.getHours() - i);
-    labels.push(d.getHours() + ":00");
+    labels.push(`${d.getHours()}:00`);
   }
   return labels;
 };
 
-const generateRandomData = (
-  baseValue: number,
-  variance: number,
-  count: number
+const generateRandomData = (baseValue: number, variance: number, count: number) => {
+  return Array.from({ length: count }, () => baseValue + Math.random() * variance * 2 - variance);
+};
+
+// Configuração base do gráfico para evitar repetição
+type ChartConfigParams = {
+  labels: string[];
+  label: string;
+  data: number[];
+  borderColor: string;
+  backgroundColor: string;
+};
+
+const createLineChart = (
+  canvas: HTMLCanvasElement,
+  { labels, label, data, borderColor, backgroundColor }: ChartConfigParams
 ) => {
-  return Array.from(
-    { length: count },
-    () => baseValue + Math.random() * variance * 2 - variance
-  );
+  new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label,
+          data,
+          borderColor,
+          backgroundColor,
+          tension: 0.4,
+          fill: true,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+          grid: { display: true, color: "rgba(0, 0, 0, 0.05)" },
+        },
+        x: {
+          grid: { display: false },
+        },
+      },
+    },
+  });
 };
 
 onMounted(() => {
-  // Inicializar gráfico de temperatura
-  // Escreva um httppost para a função getTemperaturas que irá receber o seguinte json:
-  // [EXEMPLO Q EU VOU MANDAR]
-  // Esses dados precisam ser inseridos dinamicamente na tabela de temperatura
-  
-  // getTemperaturas(){
-  //   HTTPGet ("api/sensores/termometro")
-  // }
-
+  const labels = generateTimeLabels();
 
   if (temperatureChartRef.value) {
-    const ctx = temperatureChartRef.value.getContext("2d");
-    new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: generateTimeLabels(),
-        datasets: [
-          {
-            label: "Temperatura (°C)",
-            data: generateRandomData(25, 2, 24),
-            borderColor: "rgb(255, 99, 132)",
-            backgroundColor: "rgba(255, 99, 132, 0.1)",
-            tension: 0.4,
-            fill: true,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false,
-          },
-        },
-        scales: {
-          y: {
-            beginAtZero: false,
-            grid: {
-              display: true,
-              color: "rgba(0, 0, 0, 0.05)",
-            },
-          },
-          x: {
-            grid: {
-              display: false,
-            },
-          },
-        },
-      },
+    createLineChart(temperatureChartRef.value, {
+      labels,
+      label: "Temperatura (°C)",
+      data: generateRandomData(25, 2, 24),
+      borderColor: "rgb(255, 99, 132)",
+      backgroundColor: "rgba(255, 99, 132, 0.1)",
     });
   }
 
-  // Inicializar gráfico de pH
   if (phChartRef.value) {
-    const ctx = phChartRef.value.getContext("2d");
-    new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: generateTimeLabels(),
-        datasets: [
-          {
-            label: "pH",
-            data: generateRandomData(7.2, 0.5, 24),
-            borderColor: "rgb(54, 162, 235)",
-            backgroundColor: "rgba(54, 162, 235, 0.1)",
-            tension: 0.4,
-            fill: true,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false,
-          },
-        },
-        scales: {
-          y: {
-            beginAtZero: false,
-            grid: {
-              display: true,
-              color: "rgba(0, 0, 0, 0.05)",
-            },
-          },
-          x: {
-            grid: {
-              display: false,
-            },
-          },
-        },
-      },
-    });
-  }
-  // Inicializar gráfico de turbidez
-  if (turbidityChartRef.value) {
-    const ctx = turbidityChartRef.value.getContext("2d");
-    new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: generateTimeLabels(),
-        datasets: [
-          {
-            label: "Turbidez (NTU)",
-            data: generateRandomData(3.1, 1.0, 24),
-            borderColor: "rgb(205, 133, 63)",
-            backgroundColor: "rgba(205, 133, 63, 0.1)",
-            tension: 0.4,
-            fill: true,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false,
-          },
-        },
-        scales: {
-          y: {
-            beginAtZero: false,
-            grid: {
-              display: true,
-              color: "rgba(0, 0, 0, 0.05)",
-            },
-          },
-          x: {
-            grid: {
-              display: false,
-            },
-          },
-        },
-      },
+    createLineChart(phChartRef.value, {
+      labels,
+      label: "pH",
+      data: generateRandomData(7.2, 0.5, 24),
+      borderColor: "rgb(54, 162, 235)",
+      backgroundColor: "rgba(54, 162, 235, 0.1)",
     });
   }
 
-  // Inicializar gráfico de O₂ Dissolvido
+  if (turbidityChartRef.value) {
+    createLineChart(turbidityChartRef.value, {
+      labels,
+      label: "Turbidez (NTU)",
+      data: generateRandomData(3.1, 1.0, 24),
+      borderColor: "rgb(205, 133, 63)",
+      backgroundColor: "rgba(205, 133, 63, 0.1)",
+    });
+  }
+
   if (oxygenChartRef.value) {
-    const ctx = oxygenChartRef.value.getContext("2d");
-    new Chart(ctx, {
-      type: "line",
-      data: {
-        labels: generateTimeLabels(),
-        datasets: [
-          {
-            label: "O₂ Dissolvido (mg/L)",
-            data: generateRandomData(5.8, 0.8, 24),
-            borderColor: "rgb(0, 191, 255)",
-            backgroundColor: "rgba(0, 191, 255, 0.1)",
-            tension: 0.4,
-            fill: true,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false,
-          },
-        },
-        scales: {
-          y: {
-            beginAtZero: false,
-            grid: {
-              display: true,
-              color: "rgba(0, 0, 0, 0.05)",
-            },
-          },
-          x: {
-            grid: {
-              display: false,
-            },
-          },
-        },
-      },
+    createLineChart(oxygenChartRef.value, {
+      labels,
+      label: "O₂ Dissolvido (mg/L)",
+      data: generateRandomData(5.8, 0.8, 24),
+      borderColor: "rgb(0, 191, 255)",
+      backgroundColor: "rgba(0, 191, 255, 0.1)",
     });
   }
 });
 </script>
+
+<style scoped>
+/* Se quiser adicionar styles específicos deste componente, coloque aqui */
+</style>
