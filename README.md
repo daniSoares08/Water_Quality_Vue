@@ -88,6 +88,12 @@ Abra o navegador e acesse `http://localhost:5173/`.
 - **`npm run build`**: Compila a aplicação para produção.
 - **`npm run preview`**: Pré-visualiza a build de produção.
 
+## Deploy no Netlify
+
+Este projeto está configurado para ser publicado no [Netlify](https://www.netlify.com/). As funções serverless ficam em `netlify/functions` e o arquivo `netlify.toml` já define o diretório de publicação e o comando de build.
+
+Há uma função chamada `data` que recebe requisições `POST` com os novos valores de sensores e disponibiliza esses dados via `GET` para que o dashboard atualize os gráficos em tempo real. Os dados não são persistidos em banco de dados, sendo mantidos apenas em memória enquanto a função estiver ativa.
+
 ## Contribuindo
 
 Contribuições são bem-vindas! Sinta-se à vontade para abrir issues e pull requests.
