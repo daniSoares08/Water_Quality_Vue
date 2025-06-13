@@ -15,37 +15,37 @@
       <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
         <SensorCard
           title="pH"
-          :value="sensorData.ph"
+          :value="currentValues.ph"
           unit=""
           icon="activity"
-          :status="getSensorStatus(sensorData.ph, 6.5, 7.5, 6, 8)"
+          :status="getSensorStatus(currentValues.ph, 6.5, 7.5, 6, 8)"
           :trend="0.2"
         />
 
         <SensorCard
           title="Temperatura"
-          :value="sensorData.temperature"
+          :value="currentValues.temperature"
           unit="°C"
           icon="thermometer"
-          :status="getSensorStatus(sensorData.temperature, 22, 28, 18, 30)"
+          :status="getSensorStatus(currentValues.temperature, 22, 28, 18, 30)"
           :trend="-0.5"
         />
 
         <SensorCard
           title="Turbidez"
-          :value="sensorData.turbidity"
+          :value="currentValues.turbidity"
           unit="NTU"
           icon="droplets"
-          :status="getSensorStatus(sensorData.turbidity, 0, 5, 0, 10)"
+          :status="getSensorStatus(currentValues.turbidity, 0, 5, 0, 10)"
           :trend="0.8"
         />
 
         <SensorCard
           title="O₂ Dissolvido"
-          :value="sensorData.oxygen"
+          :value="currentValues.oxygen"
           unit="mg/L"
           icon="wind"
-          :status="getSensorStatus(sensorData.oxygen, 5, 7, 4, 8)"
+          :status="getSensorStatus(currentValues.oxygen, 5, 7, 4, 8)"
           :trend="0.1"
         />
       </div>
@@ -173,24 +173,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import SensorCard from "../components/SensorCard.vue";
 import Chart from "chart.js/auto";
 
-// Simulação de dados vindos do backend
 type SensorData = {
-  ph: number;
-  temperature: number;
-  turbidity: number;
-  oxygen: number;
+  ph: number[];
+  temperature: number[];
+  turbidity: number[];
+  oxygen: number[];
 };
 
-const sensorData: SensorData = {
-  ph: 7.2,
-  temperature: 25.5,
-  turbidity: 3.1,
-  oxygen: 5.8,
-};
+const sensorHistory = reactive<SensorData>({
+  ph: [],
+  temperature: [],
+  turbidity: [],
+  oxygen: [],
+});
+
+const currentValues = reactive({
+  ph: 0,
+  temperature: 0,
+  turbidity: 0,
+  oxygen: 0,
+});
 
 // Referências para os gráficos
 const temperatureChartRef = ref<HTMLCanvasElement | null>(null);
@@ -211,11 +217,10 @@ const getSensorStatus = (
   return "critical";
 };
 
-// Utilitários para gerar dados fake
-const generateTimeLabels = () => {
+const generateTimeLabels = (count: number) => {
   const labels: string[] = [];
   const now = new Date();
-  for (let i = 23; i >= 0; i--) {
+  for (let i = count - 1; i >= 0; i--) {
     const d = new Date(now);
     d.setHours(now.getHours() - i);
     labels.push(`${d.getHours()}:00`);
@@ -223,9 +228,6 @@ const generateTimeLabels = () => {
   return labels;
 };
 
-const generateRandomData = (baseValue: number, variance: number, count: number) => {
-  return Array.from({ length: count }, () => baseValue + Math.random() * variance * 2 - variance);
-};
 
 // Configuração base do gráfico para evitar repetição
 type ChartConfigParams = {
@@ -274,14 +276,26 @@ const createLineChart = (
   });
 };
 
-onMounted(() => {
-  const labels = generateTimeLabels();
+onMounted(async () => {
+  const res = await fetch("/.netlify/functions/sensor-data");
+  const data: SensorData = await res.json();
+  sensorHistory.ph = data.ph;
+  sensorHistory.temperature = data.temperature;
+  sensorHistory.turbidity = data.turbidity;
+  sensorHistory.oxygen = data.oxygen;
+
+  const labels = generateTimeLabels(sensorHistory.temperature.length);
+
+  currentValues.ph = sensorHistory.ph.at(-1) || 0;
+  currentValues.temperature = sensorHistory.temperature.at(-1) || 0;
+  currentValues.turbidity = sensorHistory.turbidity.at(-1) || 0;
+  currentValues.oxygen = sensorHistory.oxygen.at(-1) || 0;
 
   if (temperatureChartRef.value) {
     createLineChart(temperatureChartRef.value, {
       labels,
       label: "Temperatura (°C)",
-      data: generateRandomData(25, 2, 24),
+      data: sensorHistory.temperature,
       borderColor: "rgb(255, 99, 132)",
       backgroundColor: "rgba(255, 99, 132, 0.1)",
     });
@@ -291,7 +305,7 @@ onMounted(() => {
     createLineChart(phChartRef.value, {
       labels,
       label: "pH",
-      data: generateRandomData(7.2, 0.5, 24),
+      data: sensorHistory.ph,
       borderColor: "rgb(54, 162, 235)",
       backgroundColor: "rgba(54, 162, 235, 0.1)",
     });
@@ -301,7 +315,7 @@ onMounted(() => {
     createLineChart(turbidityChartRef.value, {
       labels,
       label: "Turbidez (NTU)",
-      data: generateRandomData(3.1, 1.0, 24),
+      data: sensorHistory.turbidity,
       borderColor: "rgb(205, 133, 63)",
       backgroundColor: "rgba(205, 133, 63, 0.1)",
     });
@@ -311,7 +325,7 @@ onMounted(() => {
     createLineChart(oxygenChartRef.value, {
       labels,
       label: "O₂ Dissolvido (mg/L)",
-      data: generateRandomData(5.8, 0.8, 24),
+      data: sensorHistory.oxygen,
       borderColor: "rgb(0, 191, 255)",
       backgroundColor: "rgba(0, 191, 255, 0.1)",
     });
