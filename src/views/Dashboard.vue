@@ -173,11 +173,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, reactive } from "vue";
 import SensorCard from "../components/SensorCard.vue";
 import Chart from "chart.js/auto";
 
-// Simulação de dados vindos do backend
 type SensorData = {
   ph: number;
   temperature: number;
@@ -185,18 +184,28 @@ type SensorData = {
   oxygen: number;
 };
 
-const sensorData: SensorData = {
+const sensorData = reactive<SensorData>({
   ph: 7.2,
   temperature: 25.5,
   turbidity: 3.1,
   oxygen: 5.8,
-};
+});
 
 // Referências para os gráficos
 const temperatureChartRef = ref<HTMLCanvasElement | null>(null);
 const phChartRef = ref<HTMLCanvasElement | null>(null);
 const turbidityChartRef = ref<HTMLCanvasElement | null>(null);
 const oxygenChartRef = ref<HTMLCanvasElement | null>(null);
+const temperatureChart = ref<Chart | null>(null);
+const phChart = ref<Chart | null>(null);
+const turbidityChart = ref<Chart | null>(null);
+const oxygenChart = ref<Chart | null>(null);
+
+const timeLabels = ref<string[]>([]);
+const temperatureHistory: number[] = [];
+const phHistory: number[] = [];
+const turbidityHistory: number[] = [];
+const oxygenHistory: number[] = [];
 
 // Função para determinar o status do sensor
 const getSensorStatus = (
@@ -240,7 +249,7 @@ const createLineChart = (
   canvas: HTMLCanvasElement,
   { labels, label, data, borderColor, backgroundColor }: ChartConfigParams
 ) => {
-  new Chart(canvas, {
+  return new Chart(canvas, {
     type: "line",
     data: {
       labels,
@@ -274,48 +283,81 @@ const createLineChart = (
   });
 };
 
+const addData = (chart: Chart | null, arr: number[], value: number) => {
+  if (!chart) return;
+  arr.push(value);
+  if (arr.length > 24) arr.shift();
+  chart.data.datasets[0].data = arr;
+  chart.update();
+};
+
+const fetchData = async () => {
+  try {
+    const res = await fetch("/.netlify/functions/data");
+    const data = await res.json();
+    sensorData.ph = data.ph;
+    sensorData.temperature = data.temperature;
+    sensorData.turbidity = data.turbidity;
+    sensorData.oxygen = data.oxygen;
+
+    addData(temperatureChart.value, temperatureHistory, data.temperature);
+    addData(phChart.value, phHistory, data.ph);
+    addData(turbidityChart.value, turbidityHistory, data.turbidity);
+    addData(oxygenChart.value, oxygenHistory, data.oxygen);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 onMounted(() => {
-  const labels = generateTimeLabels();
+  timeLabels.value = generateTimeLabels();
+  temperatureHistory.push(...generateRandomData(25, 2, 24));
+  phHistory.push(...generateRandomData(7.2, 0.5, 24));
+  turbidityHistory.push(...generateRandomData(3.1, 1.0, 24));
+  oxygenHistory.push(...generateRandomData(5.8, 0.8, 24));
 
   if (temperatureChartRef.value) {
-    createLineChart(temperatureChartRef.value, {
-      labels,
+    temperatureChart.value = createLineChart(temperatureChartRef.value, {
+      labels: timeLabels.value,
       label: "Temperatura (°C)",
-      data: generateRandomData(25, 2, 24),
+      data: temperatureHistory,
       borderColor: "rgb(255, 99, 132)",
       backgroundColor: "rgba(255, 99, 132, 0.1)",
     });
   }
 
   if (phChartRef.value) {
-    createLineChart(phChartRef.value, {
-      labels,
+    phChart.value = createLineChart(phChartRef.value, {
+      labels: timeLabels.value,
       label: "pH",
-      data: generateRandomData(7.2, 0.5, 24),
+      data: phHistory,
       borderColor: "rgb(54, 162, 235)",
       backgroundColor: "rgba(54, 162, 235, 0.1)",
     });
   }
 
   if (turbidityChartRef.value) {
-    createLineChart(turbidityChartRef.value, {
-      labels,
+    turbidityChart.value = createLineChart(turbidityChartRef.value, {
+      labels: timeLabels.value,
       label: "Turbidez (NTU)",
-      data: generateRandomData(3.1, 1.0, 24),
+      data: turbidityHistory,
       borderColor: "rgb(205, 133, 63)",
       backgroundColor: "rgba(205, 133, 63, 0.1)",
     });
   }
 
   if (oxygenChartRef.value) {
-    createLineChart(oxygenChartRef.value, {
-      labels,
+    oxygenChart.value = createLineChart(oxygenChartRef.value, {
+      labels: timeLabels.value,
       label: "O₂ Dissolvido (mg/L)",
-      data: generateRandomData(5.8, 0.8, 24),
+      data: oxygenHistory,
       borderColor: "rgb(0, 191, 255)",
       backgroundColor: "rgba(0, 191, 255, 0.1)",
     });
   }
+
+  fetchData();
+  setInterval(fetchData, 5000);
 });
 </script>
 
