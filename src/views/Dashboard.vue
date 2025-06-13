@@ -185,10 +185,10 @@ type SensorData = {
 };
 
 const sensorData = reactive<SensorData>({
-  ph: 7.2,
-  temperature: 25.5,
-  turbidity: 3.1,
-  oxygen: 5.8,
+  ph: 0,
+  temperature: 0,
+  turbidity: 0,
+  oxygen: 0,
 });
 
 // Referências para os gráficos
@@ -220,7 +220,7 @@ const getSensorStatus = (
   return "critical";
 };
 
-// Utilitários para gerar dados fake
+// Utilitário para gerar rótulos de tempo
 const generateTimeLabels = () => {
   const labels: string[] = [];
   const now = new Date();
@@ -232,9 +232,6 @@ const generateTimeLabels = () => {
   return labels;
 };
 
-const generateRandomData = (baseValue: number, variance: number, count: number) => {
-  return Array.from({ length: count }, () => baseValue + Math.random() * variance * 2 - variance);
-};
 
 // Configuração base do gráfico para evitar repetição
 type ChartConfigParams = {
@@ -295,26 +292,37 @@ const fetchData = async () => {
   try {
     const res = await fetch("/.netlify/functions/data");
     const data = await res.json();
-    sensorData.ph = data.ph;
-    sensorData.temperature = data.temperature;
-    sensorData.turbidity = data.turbidity;
-    sensorData.oxygen = data.oxygen;
 
-    addData(temperatureChart.value, temperatureHistory, data.temperature);
-    addData(phChart.value, phHistory, data.ph);
-    addData(turbidityChart.value, turbidityHistory, data.turbidity);
-    addData(oxygenChart.value, oxygenHistory, data.oxygen);
+    const ph = Number(data.ph) || 0;
+    const temp = Number(data.temperature) || 0;
+    const turb = Number(data.turbidity) || 0;
+    const oxy = Number(data.oxygen) || 0;
+
+    sensorData.ph = ph;
+    sensorData.temperature = temp;
+    sensorData.turbidity = turb;
+    sensorData.oxygen = oxy;
+
+    addData(temperatureChart.value, temperatureHistory, temp);
+    addData(phChart.value, phHistory, ph);
+    addData(turbidityChart.value, turbidityHistory, turb);
+    addData(oxygenChart.value, oxygenHistory, oxy);
   } catch (err) {
     console.error(err);
+    // On error keep charts updating with zeros
+    addData(temperatureChart.value, temperatureHistory, 0);
+    addData(phChart.value, phHistory, 0);
+    addData(turbidityChart.value, turbidityHistory, 0);
+    addData(oxygenChart.value, oxygenHistory, 0);
   }
 };
 
 onMounted(() => {
   timeLabels.value = generateTimeLabels();
-  temperatureHistory.push(...generateRandomData(25, 2, 24));
-  phHistory.push(...generateRandomData(7.2, 0.5, 24));
-  turbidityHistory.push(...generateRandomData(3.1, 1.0, 24));
-  oxygenHistory.push(...generateRandomData(5.8, 0.8, 24));
+  temperatureHistory.push(...Array(24).fill(0));
+  phHistory.push(...Array(24).fill(0));
+  turbidityHistory.push(...Array(24).fill(0));
+  oxygenHistory.push(...Array(24).fill(0));
 
   if (temperatureChartRef.value) {
     temperatureChart.value = createLineChart(temperatureChartRef.value, {
@@ -357,7 +365,8 @@ onMounted(() => {
   }
 
   fetchData();
-  setInterval(fetchData, 5000);
+  // Update charts every second to display new POSTed data promptly
+  setInterval(fetchData, 1000);
 });
 </script>
 
