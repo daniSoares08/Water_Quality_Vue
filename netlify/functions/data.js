@@ -1,8 +1,11 @@
+// Stores the latest sensor values received via POST requests. All values start
+// at 0 so that clients requesting the data before any POST has been made
+// receive zeros.
 let latestData = {
-  ph: 7.2,
-  temperature: 25.5,
-  turbidity: 3.1,
-  oxygen: 5.8,
+  ph: 0,
+  temperature: 0,
+  turbidity: 0,
+  oxygen: 0,
 };
 
 exports.handler = async (event, context) => {
