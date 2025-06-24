@@ -1,0 +1,142 @@
+[
+  {
+    "ts": 1750724748957,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724750930,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724752932,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724754945,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724756947,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724758956,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724760952,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724761071,
+    "ph": 5.2,
+    "temperature": 4.5,
+    "turbidity": 22.1,
+    "oxygen": 40.8
+  },
+  {
+    "ts": 1750724762947,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724764935,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724766934,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724768948,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724770944,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724772942,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724774952,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724776945,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724778953,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724780952,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724783085,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  },
+  {
+    "ts": 1750724784945,
+    "ph": 9.95,
+    "temperature": -20,
+    "turbidity": 0,
+    "oxygen": 3300
+  }
+]
