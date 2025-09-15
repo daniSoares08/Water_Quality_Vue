@@ -42,10 +42,10 @@
 
         <SensorCard
           title="O₂ Dissolvido"
-          :value="sensorData.oxygen"
+          :value="sensorData.tds"
           unit="mg/L"
           icon="wind"
-          :status="getSensorStatus(sensorData.oxygen, 5, 7, 4, 8)"
+          :status="getSensorStatus(sensorData.tds, 5, 7, 4, 8)"
           :trend="0.1"
         />
       </div>
@@ -173,7 +173,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, reactive, markRaw } from 'vue';
 import SensorCard from "../components/SensorCard.vue";
 import Chart from "chart.js/auto";
 
@@ -181,14 +181,14 @@ type SensorData = {
   ph: number;
   temperature: number;
   turbidity: number;
-  oxygen: number;
+  tds: number;
 };
 
 const sensorData = reactive<SensorData>({
-  ph: 7.2,
-  temperature: 25.5,
-  turbidity: 3.1,
-  oxygen: 5.8,
+  ph: 0,
+  temperature: 0,
+  turbidity: 0,
+  tds: 0,
 });
 
 // Referências para os gráficos
@@ -201,11 +201,6 @@ const phChart = ref<Chart | null>(null);
 const turbidityChart = ref<Chart | null>(null);
 const oxygenChart = ref<Chart | null>(null);
 
-const timeLabels = ref<string[]>([]);
-const temperatureHistory: number[] = [];
-const phHistory: number[] = [];
-const turbidityHistory: number[] = [];
-const oxygenHistory: number[] = [];
 
 // Função para determinar o status do sensor
 const getSensorStatus = (
@@ -220,21 +215,6 @@ const getSensorStatus = (
   return "critical";
 };
 
-// Utilitários para gerar dados fake
-const generateTimeLabels = () => {
-  const labels: string[] = [];
-  const now = new Date();
-  for (let i = 23; i >= 0; i--) {
-    const d = new Date(now);
-    d.setHours(now.getHours() - i);
-    labels.push(`${d.getHours()}:00`);
-  }
-  return labels;
-};
-
-const generateRandomData = (baseValue: number, variance: number, count: number) => {
-  return Array.from({ length: count }, () => baseValue + Math.random() * variance * 2 - variance);
-};
 
 // Configuração base do gráfico para evitar repetição
 type ChartConfigParams = {
@@ -261,6 +241,7 @@ const createLineChart = (
           backgroundColor,
           tension: 0.4,
           fill: true,
+          pointRadius: 3,
         },
       ],
     },
@@ -283,84 +264,132 @@ const createLineChart = (
   });
 };
 
-const addData = (chart: Chart | null, arr: number[], value: number) => {
+const addData = (chart: Chart | null, label: string, value: number) => {
   if (!chart) return;
-  arr.push(value);
-  if (arr.length > 24) arr.shift();
-  chart.data.datasets[0].data = arr;
-  chart.update();
+
+  const labels = chart.data.labels as string[];
+  const data   = chart.data.datasets[0].data as number[];
+
+  labels.push(label);
+  data.push(value);
+
+  if (labels.length > 15) {       // mantém só 20
+    labels.shift();
+    data.shift();
+  }
+  chart.update('none');
 };
+
+const buildChartData = (
+  list: any[],
+  key: 'temperature' | 'ph' | 'turbidity' | 'oxygen'
+) => ({
+  labels: list.map(v =>
+    new Date(v.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  ),
+  data:   list.map(v => Number(v[key]) || 0),
+});
+
+const lastPlottedTs = ref<number | null>(null);
 
 const fetchData = async () => {
   try {
-    const res = await fetch("/.netlify/functions/data");
-    const data = await res.json();
-    sensorData.ph = data.ph;
-    sensorData.temperature = data.temperature;
-    sensorData.turbidity = data.turbidity;
-    sensorData.oxygen = data.oxygen;
+    const res  = await fetch('/api/measurements/latest');
+    const list = await res.json();               // agora é array
 
-    addData(temperatureChart.value, temperatureHistory, data.temperature);
-    addData(phChart.value, phHistory, data.ph);
-    addData(turbidityChart.value, turbidityHistory, data.turbidity);
-    addData(oxygenChart.value, oxygenHistory, data.oxygen);
-  } catch (err) {
-    console.error(err);
+    if (!Array.isArray(list) || list.length === 0) return;
+
+    /* último elemento → cards de “valor atual” */
+    const last = list[list.length - 1];
+
+    sensorData.ph          = +last.ph        || 0;
+    sensorData.temperature = +last.temperature || 0;
+    sensorData.turbidity   = +last.turbidity || 0;
+    sensorData.tds      = +last.oxygen    || 0;
+
+    /* se o gráfico está vazio, preenche todo o histórico de uma vez   */
+    if ((temperatureChart.value?.data.datasets[0].data.length ?? 0) === 0) {
+      const apply = (c: Chart | null, d: { labels: string[]; data: number[] }) => {
+        if (!c) return;
+        c.data.labels = d.labels;
+        c.data.datasets[0].data = d.data;
+        c.update('none');
+      };
+
+      apply(temperatureChart.value, buildChartData(list, 'temperature'));
+      lastPlottedTs.value = list[list.length - 1].ts;
+      apply(phChart.value,          buildChartData(list, 'ph'));
+      lastPlottedTs.value = list[list.length - 1].ts;
+      apply(turbidityChart.value,   buildChartData(list, 'turbidity'));
+      lastPlottedTs.value = list[list.length - 1].ts;
+      apply(oxygenChart.value,      buildChartData(list, 'oxygen'));
+      lastPlottedTs.value = list[list.length - 1].ts;
+    } else {
+      /* ciclos seguintes — só empurra o ponto mais novo */
+      if (lastPlottedTs.value !== last.ts) {
+        const label = new Date(last.ts).toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        addData(temperatureChart.value, label, +last.temperature || 0);
+        addData(phChart.value,          label, +last.ph          || 0);
+        addData(turbidityChart.value,   label, +last.turbidity   || 0);
+        addData(oxygenChart.value,      label, +last.oxygen      || 0);
+
+        lastPlottedTs.value = last.ts;   // memoriza o mais recente
+    }
+    
+  }} catch (e) {
+    console.error(e);
   }
 };
 
 onMounted(() => {
-  timeLabels.value = generateTimeLabels();
-  temperatureHistory.push(...generateRandomData(25, 2, 24));
-  phHistory.push(...generateRandomData(7.2, 0.5, 24));
-  turbidityHistory.push(...generateRandomData(3.1, 1.0, 24));
-  oxygenHistory.push(...generateRandomData(5.8, 0.8, 24));
+
 
   if (temperatureChartRef.value) {
-    temperatureChart.value = createLineChart(temperatureChartRef.value, {
-      labels: timeLabels.value,
-      label: "Temperatura (°C)",
-      data: temperatureHistory,
-      borderColor: "rgb(255, 99, 132)",
-      backgroundColor: "rgba(255, 99, 132, 0.1)",
-    });
+    temperatureChart.value = markRaw(createLineChart(temperatureChartRef.value, {
+    labels: [],
+    label: "Temperatura (°C)",
+    data: [],
+    borderColor: "rgb(255, 99, 132)",
+    backgroundColor: "rgba(255, 99, 132, 0.1)",
+  }));
   }
 
   if (phChartRef.value) {
-    phChart.value = createLineChart(phChartRef.value, {
-      labels: timeLabels.value,
+    phChart.value = markRaw(createLineChart(phChartRef.value, {
+      labels: [],
       label: "pH",
-      data: phHistory,
+      data: [],
       borderColor: "rgb(54, 162, 235)",
       backgroundColor: "rgba(54, 162, 235, 0.1)",
-    });
+    }));
   }
 
   if (turbidityChartRef.value) {
-    turbidityChart.value = createLineChart(turbidityChartRef.value, {
-      labels: timeLabels.value,
+    turbidityChart.value = markRaw(createLineChart(turbidityChartRef.value, {
+      labels: [],
       label: "Turbidez (NTU)",
-      data: turbidityHistory,
+      data: [],
       borderColor: "rgb(205, 133, 63)",
       backgroundColor: "rgba(205, 133, 63, 0.1)",
-    });
+    }));
   }
 
   if (oxygenChartRef.value) {
-    oxygenChart.value = createLineChart(oxygenChartRef.value, {
-      labels: timeLabels.value,
+    oxygenChart.value = markRaw(createLineChart(oxygenChartRef.value, {
+      labels: [],
       label: "O₂ Dissolvido (mg/L)",
-      data: oxygenHistory,
+      data: [],
       borderColor: "rgb(0, 191, 255)",
       backgroundColor: "rgba(0, 191, 255, 0.1)",
-    });
+    }));
   }
 
   fetchData();
-  setInterval(fetchData, 5000);
+  // Update charts every second to display new POSTed data promptly
+  setInterval(fetchData, 1000);
 });
 </script>
-
-<style scoped>
-/* Se quiser adicionar styles específicos deste componente, coloque aqui */
-</style>

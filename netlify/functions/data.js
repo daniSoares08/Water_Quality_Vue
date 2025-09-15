@@ -1,47 +1,20 @@
-let latestData = {
-  ph: 7.2,
-  temperature: 25.5,
-  turbidity: 3.1,
-  oxygen: 5.8,
-};
+// netlify/functions/data.js
+let latest = { ph: 0, temperature: 0, turbidity: 0, oxygen: 0 };
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
-  };
+exports.handler = async (event) => {
+  // Libera CORS para testes fora da Netlify
+  const cors = { 'Access-Control-Allow-Origin': '*' };
 
-  if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 204,
-      headers,
-      body: '',
-    };
-  }
-
+  // ── POST: grava valores ────────────────────────────────
   if (event.httpMethod === 'POST') {
-    try {
-      const data = JSON.parse(event.body || '{}');
-      latestData = { ...latestData, ...data };
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ success: true, data: latestData }),
-      };
-    } catch (err) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Invalid JSON' }),
-      };
-    }
+    latest = JSON.parse(event.body || '{}');
+    return { statusCode: 204, headers: cors }; // 204 = sem corpo
   }
 
-  // Default GET
+  // ── GET: devolve o último valor gravado ────────────────
   return {
     statusCode: 200,
-    headers,
-    body: JSON.stringify(latestData),
+    headers: { ...cors, 'Content-Type': 'application/json' },
+    body: JSON.stringify(latest),
   };
 };
